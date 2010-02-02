@@ -1,0 +1,17 @@
+<d:entry id="<%= method_id(@method) %>" d:title="<%= @method.name.gsub('<', '&lt;') %>">
+    <d:index d:value="<%= @method.full_name.gsub('<', '&lt;') %>"/>
+    <d:index d:value="<%= @method.name.gsub('<', '&lt;') %>"/>
+    <h1><%= @method.name.gsub('<', '&lt;') %></h1>
+    
+    <p class="signatures">
+      <% for param, block in [@description.params, @description.block_params] %>
+      <% if (!param.nil? || !block.nil?) && param != '()' %><b><%= param.gsub('<', '&lt;').gsub(/\n|\r/, '<br/>') unless param.nil? %> <%= block.gsub('<', '&lt;') unless block.nil? %></b><br/><% end %>
+      <% end %>
+    </p>
+    <p><b><%= @method.full_name.gsub('<', '&lt;') %></b> (<%= @description.visibility %>)</p>
+    <% unless @description.aliases.empty? %><p>Aliases: <%= @description.aliases.map {|a| a.name }.join(", ") %></p><% end %>
+    <% unless @description.is_alias_for.nil? %><p>Alias for: <%= @description.is_alias_for %></p><% end %>
+    <% unless @description.nil? %>
+    <%= render_comment(@description.comment) %>
+    <% end %>
+</d:entry>

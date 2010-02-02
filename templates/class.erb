@@ -1,0 +1,42 @@
+<d:entry id="<%= object_id(@class) %>" d:title="<%= @class.full_name %>">
+    <d:index d:value="<%= @class.full_name %>"/>
+    <d:index d:value="<%= @class.name %>"/>
+    <h1><%= @class.full_name %></h1>
+    <% unless @description.nil? %>
+    <%= render_comment(@description.comment) %>
+    <% end %>
+
+    <% unless @class.methods_matching('', true).empty? %>
+    <h3>Class methods</h3>
+    <ul>
+      <% for method in @class.methods_matching('', true) %>
+      <li><a href="x-dictionary:r:<%= method_id(method) %>"><%= method.name.gsub('<', '&lt;').gsub('&', '&amp;') %></a></li>
+      <% end %>
+    </ul>
+    <% end %>
+    
+    <% unless @class.methods_matching('', false).empty? %>
+    <h3>Instance methods</h3>
+    <ul>
+      <% for method in @class.methods_matching('', false) %>
+      <li><a href="x-dictionary:r:<%= method_id(method) %>"><%= method.name.gsub('<', '&lt;').gsub('&', '&amp;') %></a></li>
+      <% end %>
+    </ul>
+    <% end %>
+    
+    <% unless @description.constants.empty? %>
+    <h3>Constants</h3>
+    <% for constant in @description.constants %>
+    <pre><%= constant.name %> = <%= constant.value %></pre>
+    <% end %>
+    <% end %>
+    
+    <% unless @description.attributes.empty? %>
+    <h3>Attributes</h3>
+    <ul>
+    <% for attrib in @description.attributes %>
+      <li>[<%= attrib.rw %>] <b><%= attrib.name %></b></li>
+    <% end %>
+    </ul>
+    <% end %>
+</d:entry>
