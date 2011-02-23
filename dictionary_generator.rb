@@ -1,9 +1,31 @@
+#!/usr/bin/env ruby
+
 require 'erb'
 require 'rubygems'
-require 'rdoc/rdoc'
-require 'rdoc/generators/ri_generator'
+require 'iconv'
 
-@indent = ''
+gem 'rdoc', '>= 0'
+require 'rdoc/ri'
+require 'rdoc/ri/store'
+require 'rdoc/ri/paths'
+require 'rdoc/markup'
+require 'rdoc/markup/formatter'
+require 'rdoc/text'
+
+class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
+  def self.gen_relative_url(path, target)
+    nil
+  end
+end
+
+class String
+  def escape
+    gsub("&", "&amp;").gsub("<", "&lt;").gsub(">", "&gt;").gsub("'", "&apos;").gsub("\"", "&quot;")
+  end
+  def to_id
+    downcase.gsub('::', '_')
+  end
+end
 
 def get_template(file)
   erb = ''
@@ -11,120 +33,89 @@ def get_template(file)
   ERB.new(erb)
 end
 
-def object_id(obj)
-  obj.full_name.downcase.gsub('::', '_')
-end
-
-def method_id(mthd)
-  mthd.full_name.gsub('::', '_').gsub('#', '-').gsub('<', '-lt-').gsub('&', '-amp-')
-end
-
 class_template = get_template('class.erb')
 
-def render_class(cls)
+def render_class(klass)
   tpl = get_template('class.erb')
-  @class = cls
-  @description = @reader.get_class(cls)
-  tpl.result(binding)
-end
-
-def render_method(mthd)
-  tpl = get_template('method.erb')
-  @method = mthd
-  @description = @reader.get_method(mthd)
-  tpl.result(binding)
-end
-
-def render_comment(item, prefix = @indent)
-  case item
-  when Array
-    item.collect{ |c| render_comment(c) }.join
-  when SM::Flow::P
-    "<p>#{item.body}</p>"
-  when SM::Flow::LI
-    "<li>#{item.body}</li>"
-  when SM::Flow::LIST
-    render_list(item)
-  when SM::Flow::VERB
-    "<pre>#{item.body}</pre>"
-  when SM::Flow::H
-    "<h#{item.level}>#{item.text}</h#{item.level}>"
-  when SM::Flow::RULE
-    "<hr/>"
-  else
+  @class = klass
+  @class_methods = klass.method_list.reject{ |m| !m.singleton }.sort{ |a,b| a.name <=> b.name }
+  @instance_methods = klass.method_list.reject{ |m| m.singleton }.sort{ |a,b| a.name <=> b.name }
+  begin
+    @description = @iconv.iconv(klass.comment.accept(@formatter))
+  rescue
+    @description = ""
   end
+  tpl.result(binding)
 end
 
-def render_list(list)
-  case list.type
-  when SM::ListBase::BULLET 
-    prefixer = proc { |ignored| @indent + "*   " }
+def render_class_method(klass, method)
+  tpl = get_template('method.erb')
+  @klass = klass
+  @method = method
+  begin
+    @description = @iconv.iconv(method.comment.accept(@formatter))
+  rescue
+    @description = ""
+  end
+  tpl.result(binding)
+end
 
-  when SM::ListBase::NUMBER, SM::ListBase::UPPERALPHA, SM::ListBase::LOWERALPHA
+puts "Loading Ruby documentation"
 
-    start = case list.type
-            when SM::ListBase::NUMBER      then 1
-            when  SM::ListBase::UPPERALPHA then 'A'
-            when SM::ListBase::LOWERALPHA  then 'a'
-            end
-    prefixer = proc do |ignored|
-      res = @indent + "#{start}.".ljust(4)
-      start = start.succ
-      res
+classes = {}
+class_methods    = {}
+instance_methods = {}
+stores = []
+class_count = 0
+count = 0
+
+@formatter = RDoc::Markup::ToHtml.new
+@iconv = Iconv.new('UTF-8//IGNORE', 'UTF-8')
+
+RDoc::RI::Paths.each(true, true, true, true) do |path, type|
+  $stderr.puts path
+  store = RDoc::RI::Store.new(path, type)
+  store.load_cache
+  stores << store
+  class_count += store.modules.count
+end
+
+stores.each do |store|
+  store.modules.each do |name|
+    count += 1
+    $stderr << "Parse [#{count}/#{class_count}]...\r"
+    klass = store.load_class(name)
+    oldklass = classes[name]
+    unless oldklass.nil? || oldklass.method_list.count < klass.method_list.count
+      $stderr.puts "Skipping #{name}..."
+      next
     end
-    
-  when SM::ListBase::LABELED
-    prefixer = proc do |li|
-      li.label
-    end
-
-  when SM::ListBase::NOTE
-    longest = 0
-    list.contents.each do |item|
-      if item.kind_of?(SM::Flow::LI) && item.label.length > longest
-        longest = item.label.length
+    classes[name] = klass
+    klass.method_list.each_index do |index|
+      method = klass.method_list[index]
+      begin
+        method = store.load_method(name, "#{method.singleton ? '::' : '#'}#{method.name}")
+        klass.method_list[index] = method
+      rescue Errno::ENOENT => e
+        $stderr.puts e
       end
     end
-
-    prefixer = proc do |li|
-      @indent + li.label.ljust(longest+1)
-    end
-
-  else
   end
-
-  out = '<ul>'
-  list.contents.each do |item|
-    if item.kind_of? SM::Flow::LI
-      prefix = prefixer.call(item)
-      out << render_comment(item)
-    else
-      out << render_comment(item)
-    end
-  end
-  out << '</ul>'
-  out
 end
 
 puts "Building XML files from sources"
 
-cache = RI::RiCache.new('/System/Library/Frameworks/Ruby.framework/Versions/1.8/usr/share/ri/1.8/system')
+@classes = []
+@methods = []
+count = 0
 
-@reader = RI::RiReader.new(cache)
-@classes = Array.new
-@methods = Array.new
-
-def find_all_classes(parent)
-  parent.each do |com|
-    @classes << render_class(com)
-    com.methods_matching('', nil).each do |mthd|
-      @methods << render_method(mthd)
-    end
-    find_all_classes(com.classes_and_modules)
-  end
+classes.each do |name, klass|
+  count += 1
+  $stderr << "Render [#{count}/#{class_count}]...\r"
+  @classes << render_class(klass)
+  klass.method_list.each { |method| @methods << render_class_method(klass, method) }
 end
 
-find_all_classes(cache.toplevel.classes_and_modules)
 File.open('./Ruby.xml', 'w') { |file| file.puts get_template('dictionary.erb').result(binding) }
 
 puts "Dictionary XML file generation complete"

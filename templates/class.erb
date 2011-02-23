@@ -1,41 +1,43 @@
-<d:entry id="<%= object_id(@class) %>" d:title="<%= @class.full_name %>">
-    <d:index d:value="<%= @class.full_name %>"/>
-    <d:index d:value="<%= @class.name %>"/>
-    <h1><%= @class.full_name %></h1>
-    <% unless @description.nil? %>
-    <%= render_comment(@description.comment) %>
+<d:entry id="class_<%= @class.object_id.to_s(36) %>" d:title="<%= @class.full_name.escape %>">
+    <d:index d:value="<%= @class.full_name.escape %>"/>
+    <d:index d:value="<%= @class.name.escape %>"/>
+    <h1><%= @class.full_name.escape %></h1>
+    <% unless @description.empty? %>
+    <%= @description %>
     <% end %>
 
-    <% unless @class.methods_matching('', true).empty? %>
+    <% unless @class_methods.empty? %>
     <h3>Class methods</h3>
-    <ul>
-      <% for method in @class.methods_matching('', true) %>
-      <li><a href="x-dictionary:r:<%= method_id(method) %>"><%= method.name.gsub('<', '&lt;').gsub('&', '&amp;') %></a></li>
+    <ul class="classmethods">
+      <% for method in @class_methods %>
+      <li><a href="x-dictionary:r:method_<%= method.object_id.to_s(36) %>:org.ruby-lang.Dictionary"><%= method.name.escape %></a></li>
       <% end %>
     </ul>
     <% end %>
     
-    <% unless @class.methods_matching('', false).empty? %>
+    <% unless @instance_methods.empty? %>
     <h3>Instance methods</h3>
-    <ul>
-      <% for method in @class.methods_matching('', false) %>
-      <li><a href="x-dictionary:r:<%= method_id(method) %>"><%= method.name.gsub('<', '&lt;').gsub('&', '&amp;') %></a></li>
+    <ul class="instancemethods">
+      <% for method in @instance_methods %>
+      <li><a href="x-dictionary:r:method_<%= method.object_id.to_s(36) %>:org.ruby-lang.Dictionary"><%= method.name.escape %></a></li>
       <% end %>
     </ul>
     <% end %>
     
-    <% unless @description.constants.empty? %>
+    <% unless @class.constants.empty? %>
     <h3>Constants</h3>
-    <% for constant in @description.constants %>
-    <pre><%= constant.name %> = <%= constant.value %></pre>
+    <ul class="constants">
+    <% for constant in @class.constants %>
+      <li><tt><%= constant.name.escape %><% unless constant.value.nil? %>= <%= constant.value.escape %><% end %></tt> <% if constant.comment.respond_to?(:accept) %><%= @iconv.iconv(constant.comment.accept(@formatter)) %><% end %></li>
     <% end %>
+    </ul>
     <% end %>
     
-    <% unless @description.attributes.empty? %>
+    <% unless @class.attributes.empty? %>
     <h3>Attributes</h3>
-    <ul>
-    <% for attrib in @description.attributes %>
-      <li>[<%= attrib.rw %>] <b><%= attrib.name %></b></li>
+    <ul class="attributes">
+    <% for attrib in @class.attributes %>
+      <li><span class="access <%= attrib.rw.downcase %>access"> <%= attrib.rw %> </span> <%= attrib.name.escape %> <% if attrib.comment.respond_to?(:accept) %><%= @iconv.iconv(attrib.comment.accept(@formatter)) %><% end %></li>
     <% end %>
     </ul>
     <% end %>

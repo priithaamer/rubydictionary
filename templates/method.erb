@@ -1,17 +1,11 @@
-<d:entry id="<%= method_id(@method) %>" d:title="<%= @method.name.gsub('<', '&lt;') %>">
-    <d:index d:value="<%= @method.full_name.gsub('<', '&lt;') %>"/>
-    <d:index d:value="<%= @method.name.gsub('<', '&lt;') %>"/>
-    <h1><%= @method.name.gsub('<', '&lt;') %></h1>
-    
-    <p class="signatures">
-      <% for param, block in [@description.params, @description.block_params] %>
-      <% if (!param.nil? || !block.nil?) && param != '()' %><b><%= param.gsub('<', '&lt;').gsub(/\n|\r/, '<br/>') unless param.nil? %> <%= block.gsub('<', '&lt;') unless block.nil? %></b><br/><% end %>
-      <% end %>
-    </p>
-    <p><b><%= @method.full_name.gsub('<', '&lt;') %></b> (<%= @description.visibility %>)</p>
-    <% unless @description.aliases.empty? %><p>Aliases: <%= @description.aliases.map {|a| a.name }.join(", ") %></p><% end %>
-    <% unless @description.is_alias_for.nil? %><p>Alias for: <%= @description.is_alias_for %></p><% end %>
-    <% unless @description.nil? %>
-    <%= render_comment(@description.comment) %>
+<d:entry id="method_<%= @method.object_id.to_s(36) %>" d:title="<%= @method.name.escape %>">
+    <d:index d:value="<%= @method.full_name.escape %>"/>
+    <d:index d:value="<%= @method.name.escape %>"/>
+    <h1><a href="x-dictionary:r:class_<%= @class.object_id.to_s(36) %>:org.ruby-lang.Dictionary"><%= @class.full_name.escape %></a> <span class="methodtype"> <%= @method.singleton ? '::' : '#' %> </span> <%= @method.name.escape %> <span class="visibility">(<%= @method.visibility %>)</span></h1>
+    <% unless @method.arglists.nil? %><p class="signatures"><%= @method.arglists.escape %></p><% end %>
+    <% unless !@method.respond_to?(:aliases) || @method.aliases.empty? %><p>Aliases: <%= @method.aliases.map {|a| a.new_name }.join(", ").escape %></p><% end %>
+    <% unless !@method.respond_to?(:is_alias_for) || @method.is_alias_for.nil? %><p>Alias for: <%= @method.is_alias_for.escape %></p><% end %>
+    <% unless @description.empty? %>
+    <%= @description %>
     <% end %>
 </d:entry>
