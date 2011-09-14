@@ -5,3 +5,13 @@ require File.expand_path('../../lib/rubydictionary', __FILE__)
 ARGV.push('--format=rubydictionary') if ARGV.grep(/\A(-f|--fmt|--format|-r|-R|--ri|--ri-site)\b/).empty?
 r = RDoc::RDoc.new
 r.document ARGV
+
+# TODO: this below must be moved into special generator class
+dict_name = 'Ruby'
+dict_src_path = File.expand_path('../../doc/Ruby.xml', __FILE__)
+css_path = File.expand_path('../../Ruby.css', __FILE__)
+plist_path = File.expand_path('../../MyInfo.plist', __FILE__)
+
+dict_build_tool = "/Developer/Extras/Dictionary Development Kit/bin/build_dict.sh"
+
+%x{"#{dict_build_tool}" #{dict_name} #{dict_src_path} #{css_path} #{plist_path}}

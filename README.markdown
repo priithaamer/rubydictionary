@@ -1,21 +1,30 @@
-This is a fork of great Priit Haamer's [Ruby Dictionary](https://github.com/priithaamer/rubydictionary). This version uses new *RDoc* format and generates complete documentation also for all installed gems.
-
-This project contains the necessary scripts to generate [*Mac OS X* dictionary bundle](http://developer.apple.com/library/mac/documentation/UserExperience/Conceptual/DictionaryServicesProgGuide/index.html) from your [Ruby 1.8](http://www.ruby-lang.org) documentation.
+This gem adds `rubydictionary` formatter to RDoc.
 
 ## Prerequisites
 
 You will need latest [*Xcode* developer tools](http://developer.apple.com/).
 
+## Install
+
+    gem install rubydictionary
+
 ## Building dictionary
 
-Convert *RI* documentation for *Ruby* core and all installed gems into dictionary source XML using:
+Create documentation from the source code like you normally would. Only do not forget to pass `--format=rubydictionary` option:
 
-    ./dictionary_generator.rb
+    rdoc --format=rubydictionary ./sourcedir
 
-Build dictionary bundle using:
+If all goes well, you should have .dictionary file under ./doc directory. Drop it into `~/Library/Dictionaries/` folder.
 
-    make all
+## TODO
 
-Install dictionary bundle into your home folder `~/Library/Dictionaries` directory:
+* Set RDoc options from command line:
+** Dictionary name
+** Dictionary title (optional, name is default)
+* Dictinary builder script:
+** Store RDoc results into xml file (into doc/ directory)
+** Prepare .plist file
 
-    make install
+# Links
+
+* [Dictionary Services programming guide at Apple Developer site](http://developer.apple.com/library/mac/documentation/UserExperience/Conceptual/DictionaryServicesProgGuide/index.html)
