@@ -26,6 +26,9 @@ class Rubydictionary::Generator
         
         RDoc::TopLevel.all_classes.each do |clazz|
           append_class_entry(clazz, xml)
+          clazz.method_list.each do |mthd|
+            append_method_entry(mthd, xml)
+          end
         end
       end
     end
@@ -52,7 +55,7 @@ class Rubydictionary::Generator
       xml.h1(cls.full_name, :xmlns => XMLNS)
       
       xml.div(:xmlns => XMLNS) do
-        xml.cdata cls.description
+        xml << cls.description
       end
 
       # Link to class methods
@@ -81,19 +84,48 @@ class Rubydictionary::Generator
     end
   end
   
+  # <d:entry id="method_method_id" d:title="method-Name">
+  #     <d:index d:value="method full name"/>
+  #     <d:index d:value="method name"/>
+  #     <h1><a href="x-dictionary:r:class_id:org.ruby-lang.Dictionary">class full name</a> <span class="methodtype"> <%= @method.singleton ? '::' : '#' %> </span> <%= @method.name.escape %> <span class="visibility">(<%= @method.visibility %>)</span></h1>
+  #     <% unless @method.arglists.nil? %><p class="signatures"><%= @method.arglists.escape %></p><% end %>
+  #     <% unless !@method.respond_to?(:aliases) || @method.aliases.empty? %><p>Aliases: <%= @method.aliases.map {|a| a.new_name }.join(", ").escape %></p><% end %>
+  #     <% unless !@method.respond_to?(:is_alias_for) || @method.is_alias_for.nil? %><p>Alias for: <%= @method.is_alias_for.escape %></p><% end %>
+  #     <% unless @description.empty? %>
+  #     <%= @description %>
+  #     <% end %>
+  # </d:entry>
+  def append_method_entry(mthd, xml)
+    xml.entry('id' => method_id(mthd), 'd:title' => method_title(mthd)) do
+      xml.index('d:value' => mthd.full_name)
+      
+      xml.h1(mthd.full_name, :xmlns => XMLNS)
+      
+      xml.div(:xmlns => XMLNS) do
+        xml << mthd.description
+      end
+    end
+  end
+  
   def class_id(cls)
-    cls.full_name.downcase.gsub('::', '_')
+    'class_' << cls.object_id.to_s(36)
   end
   
   def class_title(cls)
     cls.full_name
   end
   
+  def method_title(mthd)
+    # TODO: escape <>
+    mthd.name
+  end
+  
   def method_url(mthd)
-    "x-dictionary:r:method_#{method_id(mthd)}:org.ruby-lang.Dictionary"
+    # TODO: org.ruby-lang.Dictionary is a bundle identifier defined in .plist file
+    "x-dictionary:r:#{method_id(mthd)}:org.ruby-lang.Dictionary"
   end
   
   def method_id(mthd)
-    mthd.name
+    'method_' << mthd.object_id.to_s(36)
   end
 end
