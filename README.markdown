@@ -19,12 +19,9 @@ If all goes well, you should have .dictionary file under ./doc directory. Drop i
 ## TODO
 
 * Set RDoc options from command line:
-** Dictionary name
-** Dictionary title (optional, name is default)
-* Dictinary builder script:
-** Store RDoc results into xml file (into doc/ directory)
 ** Prepare .plist file
 
 # Links
 
 * [Dictionary Services programming guide at Apple Developer site](http://developer.apple.com/library/mac/documentation/UserExperience/Conceptual/DictionaryServicesProgGuide/index.html)
+* https://github.com/breakpointer/ajax-rdoc

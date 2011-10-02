@@ -4,6 +4,10 @@ require 'rdoc/generator'
 
 require 'nokogiri'
 
+class RDoc::Options
+  attr_accessor :dictionary_name
+end
+
 class Rubydictionary::Generator
   
   RDoc::RDoc.add_generator self
@@ -13,13 +17,24 @@ class Rubydictionary::Generator
   XMLNS_D = 'http://www.apple.com/DTDs/DictionaryService-1.0.rng'
   
   def self.setup_options(options)
+    opt = options.option_parser
+    opt.separator nil
+    opt.separator "Dictionary generator options:"
+    opt.separator nil
+    opt.on('--dictionary-name', 'Name of the dictionary to be created') do |value|
+      options.dictionary_name = value
+    end
+    opt.separator nil
+
+    opt.separator nil
   end
   
   def initialize(options)
+    @options = options
+    @template_dir = Pathname.new(File.expand_path('../../rdoc/generator/template', __FILE__))
   end
   
   def generate(top_levels)
-    
     builder = Nokogiri::XML::Builder.new(:encoding => 'utf-8') do |xml|
       xml.send('dictionary', 'xmlns' => XMLNS, 'xmlns:d' => XMLNS_D) do
         xml.parent.namespace = xml.parent.namespace_definitions.first
@@ -33,8 +48,22 @@ class Rubydictionary::Generator
       end
     end
     
+    xml_file = 'Ruby.xml'
+    
     puts "Writing into Ruby.xml..."
-    File.open('Ruby.xml', 'w') { |f| f << builder.to_xml }
+    File.open(xml_file, 'w') { |f| f << builder.to_xml }
+    
+    dict_src_path = File.join(Pathname.pwd, xml_file)
+    
+    css_path = File.join(@template_dir, 'Dictionary.css')
+    plist_path = File.join(@template_dir, 'Myinfo.plist')
+    
+    dict_build_tool = "/Developer/Extras/Dictionary Development Kit/bin/build_dict.sh"
+    
+    # TODO: read from options
+    dictionary_name = 'Ruby'
+    
+    %x{"#{dict_build_tool}" #{dictionary_name} #{dict_src_path} #{css_path} #{plist_path}}
   end
   
   def class_dir
