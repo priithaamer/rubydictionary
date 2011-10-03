@@ -10,11 +10,11 @@ You will need latest [*Xcode* developer tools](http://developer.apple.com/).
 
 ## Building dictionary
 
-Create documentation from the source code like you normally would. Only do not forget to pass `--format=rubydictionary` option:
+Run `rubydictionary` in your source code directory. For example for source of Sinatra:
 
-    rdoc --format=rubydictionary --dict-name=Sinatra --dict-id=com.sinatrarb.Dictionary ./sourcedir
+    rubydictionary --format=rubydictionary --dict-name=Sinatra --dict-id=com.sinatrarb.Dictionary
 
-If all goes well, you should have .dictionary file under ./doc/objects directory. Drop it into `~/Library/Dictionaries/` folder.
+If all goes well, you should have Sinatra.dictionary file under ./doc/objects directory. Drop it into `~/Library/Dictionaries/` folder.
 
 # Links
 
