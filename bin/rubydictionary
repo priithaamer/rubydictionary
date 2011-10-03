@@ -2,6 +2,6 @@
 
 require File.expand_path('../../lib/rubydictionary', __FILE__)
 
-ARGV.push('--format=dictionary') if ARGV.grep(/\A(-f|--fmt|--format|-r|-R|--ri|--ri-site)\b/).empty?
+ARGV.unshift('--format=dictionary') if ARGV.grep(/\A(-f|--fmt|--format|-r|-R|--ri|--ri-site)\b/).empty?
 r = RDoc::RDoc.new
 r.document ARGV
