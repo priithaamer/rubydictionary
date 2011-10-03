@@ -1,3 +1,4 @@
+require 'erb'
 require 'rdoc'
 require 'rdoc/rdoc'
 require 'rdoc/generator'
@@ -6,26 +7,34 @@ require 'nokogiri'
 
 class RDoc::Options
   attr_accessor :dictionary_name
+  
+  attr_accessor :dictionary_identifier
 end
 
-class Rubydictionary::Generator
+class RDoc::Generator::Dictionary
   
   RDoc::RDoc.add_generator self
   
   XMLNS = 'http://www.w3.org/1999/xhtml'
   
   XMLNS_D = 'http://www.apple.com/DTDs/DictionaryService-1.0.rng'
-  
+
+  # TODO: Raise an error when dictionary name is missing
   def self.setup_options(options)
+    options.dictionary_identifier = 'com.priithaamer.Dictionary'
+    
     opt = options.option_parser
-    opt.separator nil
     opt.separator "Dictionary generator options:"
     opt.separator nil
-    opt.on('--dictionary-name', 'Name of the dictionary to be created') do |value|
+    opt.on('--dict-name=NAME', 'Title that appears in Dictionary.app') do |value|
       options.dictionary_name = value
     end
-    opt.separator nil
-
+    opt.on('--dict-id=IDENTIFIER',
+           'Dictionary bundle identifier, such as',
+           'org.rubyonrails.Rails'
+           ) do |value|
+      options.dictionary_identifier = value
+    end
     opt.separator nil
   end
   
@@ -48,22 +57,20 @@ class Rubydictionary::Generator
       end
     end
     
-    xml_file = 'Ruby.xml'
+    xml_file = 'Dictionary.xml'
     
-    puts "Writing into Ruby.xml..."
-    File.open(xml_file, 'w') { |f| f << builder.to_xml }
+    File.open(File.join(Pathname.pwd, xml_file), 'w') { |f| f << builder.to_xml }
     
     dict_src_path = File.join(Pathname.pwd, xml_file)
     
     css_path = File.join(@template_dir, 'Dictionary.css')
-    plist_path = File.join(@template_dir, 'Myinfo.plist')
+    File.open(File.join(Pathname.pwd, 'Dictionary.plist'), 'w') { |f| f.write render_plist(@options.dictionary_name, bundle_identifier) }
+    
+    plist_path = File.join(Pathname.pwd, 'Dictionary.plist')
     
     dict_build_tool = "/Developer/Extras/Dictionary Development Kit/bin/build_dict.sh"
     
-    # TODO: read from options
-    dictionary_name = 'Ruby'
-    
-    %x{"#{dict_build_tool}" #{dictionary_name} #{dict_src_path} #{css_path} #{plist_path}}
+    %x{"#{dict_build_tool}" #{@options.dictionary_name} #{dict_src_path} #{css_path} #{plist_path}}
   end
   
   def class_dir
@@ -127,6 +134,7 @@ class Rubydictionary::Generator
   def append_method_entry(mthd, xml)
     xml.entry('id' => method_id(mthd), 'd:title' => method_title(mthd)) do
       xml.index('d:value' => mthd.full_name)
+      xml.index('d:value' => mthd.name)
       
       xml.h1(mthd.full_name, :xmlns => XMLNS)
       
@@ -150,11 +158,19 @@ class Rubydictionary::Generator
   end
   
   def method_url(mthd)
-    # TODO: org.ruby-lang.Dictionary is a bundle identifier defined in .plist file
-    "x-dictionary:r:#{method_id(mthd)}:org.ruby-lang.Dictionary"
+    "x-dictionary:r:#{method_id(mthd)}:#{bundle_identifier}"
   end
   
   def method_id(mthd)
     'method_' << mthd.object_id.to_s(36)
+  end
+  
+  def bundle_identifier
+    @options.dictionary_identifier
+  end
+  
+  # Render .plist file from erb template
+  def render_plist(bundle_name, bundle_identifier)
+    ERB.new(File.read(File.join(@template_dir, 'Dictionary.plist.erb'))).result(binding)
   end
 end
