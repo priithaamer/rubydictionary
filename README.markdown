@@ -14,7 +14,7 @@ Run `rubydictionary` in your source code directory. For example for source of Si
 
     rubydictionary --dict-name=Sinatra --dict-id=com.sinatrarb.Dictionary
 
-If all goes well, you should have `Sinatra.dictionary` file under `./doc/objects` directory. Drop it into `~/Library/Dictionaries/` folder.
+If all goes well, you should now have `Sinatra.dictionary` file under `./doc/objects` directory. Drop it into `~/Library/Dictionaries/` folder.
 
 ## Authors
 

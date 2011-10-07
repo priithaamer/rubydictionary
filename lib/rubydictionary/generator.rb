@@ -41,6 +41,10 @@ class RDoc::Generator::Dictionary
   def initialize(options)
     @options = options
     @template_dir = Pathname.new(File.expand_path('../../rdoc/generator/template', __FILE__))
+    
+    # Keep the track of methods and classes already rendered and avoid duplication
+    @class_ids = []
+    @method_ids = []
   end
   
   def generate(top_levels)
@@ -48,10 +52,17 @@ class RDoc::Generator::Dictionary
       xml.send('dictionary', 'xmlns' => XMLNS, 'xmlns:d' => XMLNS_D) do
         xml.parent.namespace = xml.parent.namespace_definitions.first
         
-        RDoc::TopLevel.all_classes.each do |clazz|
-          append_class_entry(clazz, xml)
-          clazz.method_list.each do |mthd|
-            append_method_entry(mthd, xml)
+        RDoc::TopLevel.all_classes_and_modules.each do |clazz|
+          unless @class_ids.include?(class_id(clazz))
+            append_class_entry(clazz, xml)
+            @class_ids << class_id(clazz)
+            
+            clazz.method_list.each do |mthd|
+              unless @method_ids.include?(method_id(mthd))
+                append_method_entry(mthd, xml)
+                @method_ids << method_id(mthd)
+              end
+            end
           end
         end
       end
@@ -70,7 +81,7 @@ class RDoc::Generator::Dictionary
     
     dict_build_tool = "/Developer/Extras/Dictionary Development Kit/bin/build_dict.sh"
     
-    %x{"#{dict_build_tool}" #{@options.dictionary_name} #{dict_src_path} #{css_path} #{plist_path}}
+    %x{"#{dict_build_tool}" "#{@options.dictionary_name}" #{dict_src_path} #{css_path} #{plist_path}}
   end
   
   def class_dir
@@ -79,14 +90,9 @@ class RDoc::Generator::Dictionary
   
   private
   
-  # <d:entry id="activerecord_base" d:title="ActiveRecord::Base">
-  #     <d:index d:value="ActiveRecord::Base"/>
-  #     <d:index d:value="Base"/>
-  #     <h1>ActiveRecord::Base</h1>
   def append_class_entry(cls, xml)
     xml.entry('id' => class_id(cls), 'd:title' => class_title(cls)) do
       xml.index('d:value' => cls.full_name)
-      # xml.index('d:value' => class_index_name(clazz))
       
       xml.h1(cls.full_name, :xmlns => XMLNS)
       
@@ -120,23 +126,14 @@ class RDoc::Generator::Dictionary
     end
   end
   
-  # <d:entry id="method_method_id" d:title="method-Name">
-  #     <d:index d:value="method full name"/>
-  #     <d:index d:value="method name"/>
-  #     <h1><a href="x-dictionary:r:class_id:org.ruby-lang.Dictionary">class full name</a> <span class="methodtype"> <%= @method.singleton ? '::' : '#' %> </span> <%= @method.name.escape %> <span class="visibility">(<%= @method.visibility %>)</span></h1>
-  #     <% unless @method.arglists.nil? %><p class="signatures"><%= @method.arglists.escape %></p><% end %>
-  #     <% unless !@method.respond_to?(:aliases) || @method.aliases.empty? %><p>Aliases: <%= @method.aliases.map {|a| a.new_name }.join(", ").escape %></p><% end %>
-  #     <% unless !@method.respond_to?(:is_alias_for) || @method.is_alias_for.nil? %><p>Alias for: <%= @method.is_alias_for.escape %></p><% end %>
-  #     <% unless @description.empty? %>
-  #     <%= @description %>
-  #     <% end %>
-  # </d:entry>
   def append_method_entry(mthd, xml)
     xml.entry('id' => method_id(mthd), 'd:title' => method_title(mthd)) do
       xml.index('d:value' => mthd.full_name)
       xml.index('d:value' => mthd.name)
       
-      xml.h1(mthd.full_name, :xmlns => XMLNS)
+      xml.h1(mthd.arglists, :xmlns => XMLNS)
+      
+      xml.p(mthd.full_name, :class => 'method_name', :xmlns => XMLNS)
       
       xml.div(:xmlns => XMLNS) do
         xml << mthd.description
@@ -153,7 +150,6 @@ class RDoc::Generator::Dictionary
   end
   
   def method_title(mthd)
-    # TODO: escape <>
     mthd.name
   end
   
