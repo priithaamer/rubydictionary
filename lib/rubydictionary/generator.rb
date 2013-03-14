@@ -9,6 +9,8 @@ class RDoc::Options
   attr_accessor :dictionary_name
   
   attr_accessor :dictionary_identifier
+  
+  attr_accessor :kit_path
 end
 
 class RDoc::Generator::Dictionary
@@ -29,11 +31,11 @@ class RDoc::Generator::Dictionary
     opt.on('--dict-name=NAME', 'Title that appears in Dictionary.app') do |value|
       options.dictionary_name = value
     end
-    opt.on('--dict-id=IDENTIFIER',
-           'Dictionary bundle identifier, such as',
-           'org.rubyonrails.Rails'
-           ) do |value|
+    opt.on('--dict-id=IDENTIFIER', 'Dictionary bundle identifier, such as', 'org.rubyonrails.Rails') do |value|
       options.dictionary_identifier = value
+    end
+    opt.on('--kit-path=DICTIONARY_KIT_PATH', 'Full path to Dictionary Development Kit') do |value|
+      options.kit_path = value
     end
     opt.separator nil
   end
@@ -79,9 +81,13 @@ class RDoc::Generator::Dictionary
     
     plist_path = File.join(Pathname.pwd, 'Dictionary.plist')
     
-    dict_build_tool = "/Developer/Extras/Dictionary Development Kit/bin/build_dict.sh"
+    dict_build_tool = (@options.kit_path || '/Developer/Extras/Dictionary Development Kit') + '/bin/build_dict.sh'
     
     %x{"#{dict_build_tool}" "#{@options.dictionary_name}" #{dict_src_path} #{css_path} #{plist_path}}
+  end
+  
+  def file_dir
+    ''
   end
   
   def class_dir
