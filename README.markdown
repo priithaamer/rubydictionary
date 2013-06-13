@@ -18,9 +18,18 @@ Dictionary Development Kit can be downloaded from [Downloads for Apple Developer
 
 Run `rubydictionary` in your source code directory. For example for source of Sinatra:
 
-    rubydictionary --dict-name=Sinatra --dict-id=com.sinatrarb.Dictionary
+    rubydictionary \
+				--dict-name=Sinatra \
+				--dict-id=com.sinatrarb.Dictionary
 
 If everything goes well, you should now have `Sinatra.dictionary` file under `./doc/objects` directory. Drop it into `~/Library/Dictionaries/` folder.
+
+If Dictionary Development Kit is located somewhere else than in `/Developer/Extras` (which is recommended in 10.9+), you can specify the path for it with `--kit-path` option:
+
+		rubydictionary \
+				--dict-name=Sinatra \
+				--dict-id=com.sinatrarb.Dictionary \
+				--kit-path=~/Source/DictionaryDevKit
 
 ## Authors
 
